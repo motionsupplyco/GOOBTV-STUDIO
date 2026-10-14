@@ -18,7 +18,7 @@ jobs:
           mkdir -p output/preview_frames
           xvfb-run -a blender -b /tmp/wrongside_shot.blend -t 2 --python episodes/01_THE_DAY_THE_FLOOR_QUIT/fast_preview.py -o "$PWD/output/preview_frames/f_" -F PNG -s 1 -e 240 -j 2 -a
       - name: Encode preview MP4
-        run: ffmpeg -y -framerate 12 -i output/preview_frames/f_%04d.png -c:v libx264 -preset ultrafast -crf 25 -pix_fmt yuv420p -movflags +faststart output/WRONGSIDE_FAST_PREVIEW.mp4
+        run: ffmpeg -y -framerate 12 -pattern_type glob -i 'output/preview_frames/f_*.png' -c:v libx264 -preset ultrafast -crf 25 -pix_fmt yuv420p -movflags +faststart output/WRONGSIDE_FAST_PREVIEW.mp4
       - uses: actions/upload-artifact@v4
         with:
           name: WRONGSIDE-Fast-Preview
