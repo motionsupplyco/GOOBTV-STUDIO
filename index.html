@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>WRONGSIDE — Real-time 3D Studio</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#111827;color:#f8fafc;font:15px system-ui,Arial}header{padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:8px}header strong{letter-spacing:.12em;color:#fcd34d}small{color:#aab4c4}main{max-width:1100px;margin:auto}#stage{position:relative;background:#91d9f7;aspect-ratio:16/9;overflow:hidden}canvas{width:100%;height:100%;display:block}#subtitle{position:absolute;bottom:8%;width:100%;text-align:center;font-weight:900;font-size:clamp(14px,2.4vw,30px);text-shadow:2px 3px #151515;padding:0 12px;pointer-events:none}#time{position:absolute;top:12px;left:12px;background:#0009;padding:5px 9px;border-radius:8px;font-variant-numeric:tabular-nums}.controls{padding:14px;display:flex;flex-wrap:wrap;gap:9px;align-items:center}button,select{border:1px solid #445269;border-radius:10px;padding:11px 14px;background:#253349;color:white;font-weight:700;cursor:pointer}button.primary{background:#f6b928;color:#121826;border:0}input[type=range]{flex:1;min-width:120px;accent-color:#f6b928}p{color:#b9c5d6;line-height:1.55;padding:0 16px}#status{padding:4px 16px;color:#ffdb8c}#stage:fullscreen{aspect-ratio:auto;width:100%;height:100%}#stage:fullscreen canvas{height:100%}@media(max-width:600px){header{font-size:13px}.controls{gap:6px}button{padding:10px}}
+</style></head><body><main><header><div><strong>WRONGSIDE</strong> <small>GOOBTV / 3D Studio</small></div><small>EP01 · Shot 01C · Real-time preview</small></header>
+<div id="stage"><div id="time">00:00 / 00:10</div><div id="subtitle"></div></div>
+<div class="controls"><button class="primary" id="play">▶ Play</button><button id="restart">↺ Restart</button><input aria-label="Scrub timeline" id="scrub" type="range" min="0" max="10" step=".01" value="0"><select id="camera" aria-label="Camera"><option value="cinematic">Cinematic camera</option><option value="wide">Wide camera</option><option value="close">Close camera</option></select><button id="sound">🔊 Sound on</button><button id="full">⛶ Fullscreen</button></div>
+<div id="status">Loading real-time 3D scene…</div>
+<p>This is an interactive, real-time WebGL prototype, not a pre-rendered video. Pip, the sidewalk and camera move in actual 3D. No cloud render or paid credits. Character animation and voices are placeholders; final production needs better models, rigging and voice work.</p></main>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js';
+const stage=document.getElementById('stage'),subtitle=document.getElementById('subtitle'),status=document.getElementById('status');
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x8cd4f4);scene.fog=new THREE.Fog(0x8cd4f4,20,52);
+const camera=new THREE.PerspectiveCamera(38,16/9,.1,120);
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;stage.prepend(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xe8f7ff,0x688654,2.2));
+const sun=new THREE.DirectionalLight(0xffffff,2.4);sun.position.set(-5,10,6);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-12;sun.shadow.camera.right=12;sun.shadow.camera.top=12;sun.shadow.camera.bottom=-12;scene.add(sun);
+const M=(color,roughness=1)=>new THREE.MeshStandardMaterial({color,roughness});
+const teal=M(0x1ab8b5),cream=M(0xf7d7a5),dark=M(0x182538),yellow=M(0xffca24),orange=M(0xf47a2c),white=M(0xffffff),road=M(0x454b59),grass=M(0x60c66b),stone=M(0xa4abb7),brick=M(0xfa8172),roofmat=M(0x2874d6),green=M(0x28795b),black=M(0x161e2b);
+function mesh(geo,mat,parent=scene,x=0,y=0,z=0){const o=new THREE.Mesh(geo,mat);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;parent.add(o);return o}
+function box(w,h,d,mat,parent,x,y,z,r=.06){const o=mesh(new THREE.BoxGeometry(w,h,d),mat,parent,x,y,z);if(r)o.geometry.translate(0,0,0);return o}
+function sphere(sx,sy,sz,mat,parent,x,y,z){const o=mesh(new THREE.SphereGeometry(1,16,12),mat,parent,x,y,z);o.scale.set(sx,sy,sz);return o}
+box(60,.2,35,grass,scene,0,-.16,0);box(60,.05,5,road,scene,0,-.01,3.7);
+const sidewalk=new THREE.Group();scene.add(sidewalk);
+box(13,.22,2.4,stone,sidewalk,0,.07,.2);
+for(let x=-5.5;x<6;x+=2.2)box(.04,.015,2.36,road,sidewalk,x,.192,.2,0);
+const house=new THREE.Group();house.position.set(-1,0,-5);scene.add(house);
+box(5,3.9,3.2,brick,house,0,2,0);const top=box(5.7,.55,3.8,roofmat,house,.1,4.15,0);top.rotation.z=.1;
+box(1.05,2.15,.12,dark,house,-1.25,1.1,1.66);
+for(const x of [.5,1.6]){box(.75,.9,.13,white,house,x,2.5,1.66);box(.09,.9,.14,roofmat,house,x,2.5,1.75)}
+const pip=new THREE.Group();scene.add(pip);
+sphere(.45,.63,.35,teal,pip,0,1.02,0);
+sphere(.57,.51,.43,teal,pip,0,1.98,0);
+sphere(.35,.2,.18,cream,pip,0,1.78,.39);sphere(.12,.08,.09,dark,pip,0,1.9,.56);
+for(const s of [-1,1]){sphere(.23,.29,.15,teal,pip,s*.45,2.42,0);sphere(.12,.17,.08,cream,pip,s*.46,2.44,.13);sphere(.19,.21,.08,dark,pip,s*.24,2.04,.37);sphere(.105,.13,.045,white,pip,s*.24,2.07,.44);sphere(.048,.07,.025,dark,pip,s*.24,2.07,.48)}
+box(.79,.72,.32,yellow,pip,0,1.12,.14);box(.88,.16,.39,orange,pip,0,.75,.13);
+const leftArm=new THREE.Group(),rightArm=new THREE.Group();pip.add(leftArm,rightArm);
+for(const [s,g] of [[-1,leftArm],[1,rightArm]]){g.position.set(s*.5,1.42,0);sphere(.17,.42,.17,teal,g,0,-.28,0)}
+const feet=[];
+for(const s of [-1,1]){const g=new THREE.Group();g.position.set(s*.23,.45,0);pip.add(g);sphere(.21,.36,.23,dark,g,0,-.25,.13);feet.push(g)}
+const tail=sphere(.45,.22,.26,teal,pip,.58,.73,-.25);tail.rotation.z=-.35;
+const bushes=[];for(const x of [1.6,2.15,2.7])bushes.push(sphere(.65,.56,.55,grass,scene,x,.45,-.4));
+const bin=new THREE.Group();bin.position.set(4,0,.4);scene.add(bin);box(1,1.3,.95,green,bin,0,.7,0);box(1.23,.15,1.1,dark,bin,0,1.39,0);for(const x of [-.23,.23])sphere(.1,.13,.045,white,bin,x,.95,.5);
+const clock=new THREE.Clock();let t=0,playing=false,soundOn=true;
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v)),lerp=(a,b,f)=>a+(b-a)*f,smooth=v=>{v=clamp(v,0,1);return v*v*(3-2*v)};
+function frame(sec){t=clamp(sec,0,10);document.getElementById('scrub').value=t;
+const walk=smooth(t/3.3),slip=smooth((t-3.1)/1.1),fall=smooth((t-4.25)/1.8),recover=smooth((t-7.4)/1.7);
+pip.position.set(lerp(-4,-.8,walk)+slip*2.7,0,0);
+pip.position.y=fall*Math.sin(Math.PI*clamp((t-4.2)/2.3,0,1))*.7;
+pip.rotation.z=-fall*1.25*(1-recover);pip.rotation.x=fall*.12;
+for(let i=0;i<2;i++)feet[i].rotation.x=(t<3.3?Math.sin(t*12+i*Math.PI)*.55:0);
+leftArm.rotation.z=fall*-.9;rightArm.rotation.z=fall*.9;tail.rotation.x=Math.sin(t*4)*.15;
+sidewalk.position.x=1.5*smooth((t-2.9)/.65)-.5*smooth((t-6.3)/1);
+for(const [i,b] of bushes.entries())b.scale.y=(.56+.16*Math.sin(t*4+i))*(t>5.6&&t<7?1.15:1);
+const mode=document.getElementById('camera').value;
+const target=mode==='close'?new THREE.Vector3(pip.position.x,1.5,0):new THREE.Vector3(.2,1.4,-1);
+const camPos=mode==='wide'?new THREE.Vector3(0,7,17):mode==='close'?new THREE.Vector3(pip.position.x,3.2,8):new THREE.Vector3(0,4.3,13.8);
+camera.position.lerp(camPos,.16);camera.lookAt(target);
+subtitle.textContent=t<1.5?'PIP: Another beautiful morning!':t<3.5?'PIP: Wait... what?':t<5.5?'PIP: HEY! COME BACK!':t<7.5?'PIP: OOOF!':'PIP: Okay. That\'s new.';
+document.getElementById('time').textContent='00:'+String(Math.floor(t)).padStart(2,'0')+' / 00:10';
+}
+function resize(){const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
+new ResizeObserver(resize).observe(stage);resize();frame(0);
+function loop(){requestAnimationFrame(loop);let dt=Math.min(clock.getDelta(),.06);if(playing){if(t+dt>=10){playing=false;document.getElementById('play').textContent='▶ Play'}frame((t+dt)%10)}renderer.render(scene,camera)}loop();
+document.getElementById('play').onclick=()=>{playing=!playing;clock.getDelta();document.getElementById('play').textContent=playing?'Ⅱ Pause':'▶ Play';if(playing&&t>=9.98)frame(0)};
+document.getElementById('restart').onclick=()=>frame(0);
+document.getElementById('scrub').oninput=e=>{playing=false;document.getElementById('play').textContent='▶ Play';frame(+e.target.value)};
+document.getElementById('camera').onchange=()=>frame(t);
+document.getElementById('sound').onclick=()=>{soundOn=!soundOn;document.getElementById('sound').textContent=soundOn?'🔊 Sound on':'🔇 Sound off';status.textContent='Dialogue audio is not recorded yet; subtitles are temporary.'};
+document.getElementById('full').onclick=()=>stage.requestFullscreen?.();
+status.textContent='3D scene ready. Tap Play. No video rendering required.';
+</script></body></html>
