@@ -1,0 +1,25 @@
+name: WRONGSIDE Shot 01C Test
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install free tools
+        run: sudo apt-get update && sudo apt-get install -y blender ffmpeg libegl1 libgl1 libgl1-mesa-dri libopengl0 xvfb
+      - name: Build Pip and Wrongside scene
+        run: xvfb-run -a blender -b -t 2 --python episodes/01_THE_DAY_THE_FLOOR_QUIT/shot_01C.py
+      - name: Render 10 second animation
+        run: |
+          mkdir -p output/frames
+          xvfb-run -a blender -b /tmp/wrongside_shot.blend -t 2 -o "$PWD/output/frames/shot_" -F PNG -s 1 -e 240 -a
+      - name: Encode MP4
+        run: ffmpeg -y -framerate 24 -i output/frames/shot_%04d.png -c:v libx264 -crf 23 -pix_fmt yuv420p -movflags +faststart output/WRONGSIDE_S01E01_SHOT_01C_TEST.mp4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WRONGSIDE-Shot-01C-Test
+          path: output/WRONGSIDE_S01E01_SHOT_01C_TEST.mp4
