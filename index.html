@@ -7,7 +7,7 @@
 <div id="stage"><div id="time">00:00 / 00:10</div><div id="subtitle"></div></div>
 <div class="controls"><button class="primary" id="play">▶ Play</button><button id="restart">↺ Restart</button><input aria-label="Scrub timeline" id="scrub" type="range" min="0" max="10" step=".01" value="0"><select id="camera" aria-label="Camera"><option value="cinematic">Cinematic camera</option><option value="wide">Wide camera</option><option value="close">Close camera</option></select><button id="sound">🔊 Sound on</button><button id="full">⛶ Fullscreen</button></div>
 <div id="status">Loading real-time 3D scene…</div>
-<p>This is an interactive, real-time WebGL prototype, not a pre-rendered video. Pip, the sidewalk and camera move in actual 3D. No cloud render or paid credits. Character animation and voices are placeholders; final production needs better models, rigging and voice work.</p></main>
+<p>This is an interactive, real-time WebGL prototype, not a pre-rendered video. Pip, the sidewalk and camera move in actual 3D. No cloud render or paid credits. Character animation and browser-generated English voices are placeholders; final production needs better models, rigging and recorded voice work.</p></main>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js';
 const stage=document.getElementById('stage'),subtitle=document.getElementById('subtitle'),status=document.getElementById('status');
@@ -42,7 +42,13 @@ for(const s of [-1,1]){const g=new THREE.Group();g.position.set(s*.23,.45,0);pip
 const tail=sphere(.45,.22,.26,teal,pip,.58,.73,-.25);tail.rotation.z=-.35;
 const bushes=[];for(const x of [1.6,2.15,2.7])bushes.push(sphere(.65,.56,.55,grass,scene,x,.45,-.4));
 const bin=new THREE.Group();bin.position.set(4,0,.4);scene.add(bin);box(1,1.3,.95,green,bin,0,.7,0);box(1.23,.15,1.1,dark,bin,0,1.39,0);for(const x of [-.23,.23])sphere(.1,.13,.045,white,bin,x,.95,.5);
-const clock=new THREE.Clock();let t=0,playing=false,soundOn=true;
+const clock=new THREE.Clock();let t=0,playing=false,soundOn=true,lastCue=-1;
+const lines=[{at:.35,say:'Another beautiful morning!'},{at:2.1,say:'Wait... what?'},{at:3.75,say:'HEY! COME BACK!'},{at:5.35,say:'Whoa!'},{at:7.6,say:'Okay. That is new.'}];
+let voiceList=[];function refreshVoices(){voiceList=window.speechSynthesis?.getVoices()||[]}refreshVoices();if(window.speechSynthesis)window.speechSynthesis.onvoiceschanged=refreshVoices;
+let audioContext;
+function beep(freq=250,secs=.14,type='sine'){if(!soundOn)return;try{audioContext ||=new (window.AudioContext||window.webkitAudioContext)();if(audioContext.state==='suspended')audioContext.resume();const osc=audioContext.createOscillator(),gain=audioContext.createGain();osc.type=type;osc.frequency.setValueAtTime(freq,audioContext.currentTime);osc.frequency.exponentialRampToValueAtTime(Math.max(50,freq*.5),audioContext.currentTime+secs);gain.gain.setValueAtTime(.12,audioContext.currentTime);gain.gain.exponentialRampToValueAtTime(.001,audioContext.currentTime+secs);osc.connect(gain).connect(audioContext.destination);osc.start();osc.stop(audioContext.currentTime+secs)}catch(e){console.warn('SFX unavailable',e)}}
+function say(s){if(!soundOn||!('speechSynthesis'in window))return;window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(s);u.lang='en-US';u.rate=1.12;u.pitch=1.4;u.volume=1;const en=voiceList.find(v=>v.lang.toLowerCase().startsWith('en-us'))||voiceList.find(v=>v.lang.toLowerCase().startsWith('en'));if(en)u.voice=en;window.speechSynthesis.speak(u)}
+function cues(prev,now){if(now<prev){lastCue=-1;return}for(let i=0;i<lines.length;i++){if(prev<lines[i].at&&now>=lines[i].at&&i!==lastCue){lastCue=i;say(lines[i].say);if(i===2)beep(450,.3,'sawtooth');if(i===3)beep(110,.45,'triangle')}}}
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v)),lerp=(a,b,f)=>a+(b-a)*f,smooth=v=>{v=clamp(v,0,1);return v*v*(3-2*v)};
 function frame(sec){t=clamp(sec,0,10);document.getElementById('scrub').value=t;
 const walk=smooth(t/3.3),slip=smooth((t-3.1)/1.1),fall=smooth((t-4.25)/1.8),recover=smooth((t-7.4)/1.7);
@@ -62,12 +68,12 @@ document.getElementById('time').textContent='00:'+String(Math.floor(t)).padStart
 }
 function resize(){const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
 new ResizeObserver(resize).observe(stage);resize();frame(0);
-function loop(){requestAnimationFrame(loop);let dt=Math.min(clock.getDelta(),.06);if(playing){if(t+dt>=10){playing=false;document.getElementById('play').textContent='▶ Play'}frame((t+dt)%10)}renderer.render(scene,camera)}loop();
-document.getElementById('play').onclick=()=>{playing=!playing;clock.getDelta();document.getElementById('play').textContent=playing?'Ⅱ Pause':'▶ Play';if(playing&&t>=9.98)frame(0)};
-document.getElementById('restart').onclick=()=>frame(0);
+function loop(){requestAnimationFrame(loop);let dt=Math.min(clock.getDelta(),.06);if(playing){const prev=t;if(t+dt>=10){playing=false;document.getElementById('play').textContent='▶ Play';window.speechSynthesis?.cancel()}frame(Math.min(t+dt,10));cues(prev,t)}renderer.render(scene,camera)}loop();
+document.getElementById('play').onclick=()=>{playing=!playing;clock.getDelta();if(!playing)window.speechSynthesis?.cancel();else{beep(500,.07);if(t===0)lastCue=-1}document.getElementById('play').textContent=playing?'Ⅱ Pause':'▶ Play';if(playing&&t>=9.98)frame(0)};
+document.getElementById('restart').onclick=()=>{window.speechSynthesis?.cancel();lastCue=-1;frame(0)};
 document.getElementById('scrub').oninput=e=>{playing=false;document.getElementById('play').textContent='▶ Play';frame(+e.target.value)};
 document.getElementById('camera').onchange=()=>frame(t);
-document.getElementById('sound').onclick=()=>{soundOn=!soundOn;document.getElementById('sound').textContent=soundOn?'🔊 Sound on':'🔇 Sound off';status.textContent='Dialogue audio is not recorded yet; subtitles are temporary.'};
+document.getElementById('sound').onclick=()=>{soundOn=!soundOn;if(!soundOn)window.speechSynthesis?.cancel();else beep(660,.12);document.getElementById('sound').textContent=soundOn?'🔊 Sound on':'🔇 Sound off';status.textContent=soundOn?'English browser voice and synthesized sound effects enabled.':'Sound muted.'};
 document.getElementById('full').onclick=()=>stage.requestFullscreen?.();
-status.textContent='3D scene ready. Tap Play. No video rendering required.';
+status.textContent='3D scene ready. Tap Play. No video rendering required. Tap Play to hear English browser voices.';
 </script></body></html>
