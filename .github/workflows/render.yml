@@ -1,0 +1,24 @@
+name: Render GOOBTV
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y blender ffmpeg espeak
+      - run: mkdir -p output/frames && blender -b -t 2 --python scripts/scene.py
+      - run: blender -b /tmp/goobtv.blend -t 2 -o "$PWD/output/frames/f_" -F PNG -s 1 -e 192 -a
+      - run: |
+          espeak -v en-us+m3 -s 160 -w output/a.wav 'BABY STOP!'
+          espeak -v en-us+m7 -s 125 -p 20 -w output/b.wav 'I AM THE STOP!'
+          espeak -v en-us+m3 -s 170 -w output/c.wav "I'M THE BABY NOW?!"
+          ffmpeg -y -i output/a.wav -i output/b.wav -i output/c.wav -filter_complex '[0:a]adelay=300|300[a];[1:a]adelay=3000|3000[b];[2:a]adelay=6100|6100[c];[a][b][c]amix=inputs=3:duration=longest' output/voices.wav
+          ffmpeg -y -framerate 24 -i output/frames/f_%04d.png -i output/voices.wav -c:v libx264 -pix_fmt yuv420p -c:a aac -t 8 output/GOOBTV.mp4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GOOBTV-Short
+          path: output/GOOBTV.mp4
