@@ -2,7 +2,7 @@ import bpy, math
 from mathutils import Vector
 bpy.ops.object.select_all(action='SELECT'); bpy.ops.object.delete(use_global=False)
 s=bpy.context.scene
-s.render.engine='BLENDER_EEVEE' if bpy.app.version < (4,2,0) else 'BLENDER_EEVEE_NEXT'
+s.render.engine='CYCLES';s.cycles.device='CPU';s.cycles.samples=8
 s.render.resolution_x=540;s.render.resolution_y=960;s.render.fps=24;s.frame_end=192
 def material(name,color):
  m=bpy.data.materials.new(name);m.diffuse_color=(*color,1);return m
