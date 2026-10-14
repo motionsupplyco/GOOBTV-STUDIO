@@ -1,0 +1,25 @@
+name: WRONGSIDE Fast Preview
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install renderer
+        run: sudo apt-get update && sudo apt-get install -y blender ffmpeg xvfb libegl1 libgl1 libgl1-mesa-dri libopengl0
+      - name: Build animated scene
+        run: xvfb-run -a blender -b -t 2 --python episodes/01_THE_DAY_THE_FLOOR_QUIT/shot_01C.py
+      - name: Render fast frames
+        run: |
+          mkdir -p output/preview_frames
+          xvfb-run -a blender -b /tmp/wrongside_shot.blend -t 2 --python episodes/01_THE_DAY_THE_FLOOR_QUIT/fast_preview.py -o "$PWD/output/preview_frames/f_" -F PNG -s 1 -e 240 -j 2 -a
+      - name: Encode preview MP4
+        run: ffmpeg -y -framerate 12 -i output/preview_frames/f_%04d.png -c:v libx264 -preset ultrafast -crf 25 -pix_fmt yuv420p -movflags +faststart output/WRONGSIDE_FAST_PREVIEW.mp4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WRONGSIDE-Fast-Preview
+          path: output/WRONGSIDE_FAST_PREVIEW.mp4
