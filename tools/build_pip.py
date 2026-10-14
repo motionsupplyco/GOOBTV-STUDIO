@@ -49,7 +49,7 @@ for i in range(5):
 bpy.context.view_layer.objects.active=root;root.select_set(True)
 for frame,rot in [(1,0),(12,-.05),(24,0),(36,.05),(48,0)]:
  root.rotation_euler[2]=rot;root.keyframe_insert(data_path='rotation_euler',frame=frame)
-action=bpy.data.actions.get('Pip_Idle')
+# The pivot keyframes export as a simple idle animation.
 scene=bpy.context.scene;scene.frame_start=1;scene.frame_end=48;scene.render.fps=24
 os.makedirs('assets/characters',exist_ok=True)
 bpy.ops.object.select_all(action='SELECT')
