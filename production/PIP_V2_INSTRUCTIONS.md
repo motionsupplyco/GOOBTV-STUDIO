@@ -1,0 +1,3 @@
+# Pip V2 local Blender build
+
+Use the `WRONGSIDE_Pip_V2.py` script supplied in the ChatGPT conversation. Save the current .blend file before running: it deletes all objects in the active scene. Open Blender > Scripting > Text Editor > Open, choose script, press Alt+P. Press Numpad 0 for studio camera, Space to play the 4-second idle, F12 for a still preview. This is an original procedural character draft with separate object animation controls, **not** a skinned skeleton rig or polished final character. Requires local Blender; no GitHub cloud render. If Blender reports an error, capture its traceback before rerunning.
