@@ -9,9 +9,9 @@ jobs:
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
-      - run: sudo apt-get update && sudo apt-get install -y blender ffmpeg espeak
-      - run: mkdir -p output/frames && blender -b -t 2 --python scripts/scene.py
-      - run: blender -b /tmp/goobtv.blend -t 2 -o "$PWD/output/frames/f_" -F PNG -s 1 -e 192 -a
+      - run: sudo apt-get update && sudo apt-get install -y blender ffmpeg espeak libegl1 libgl1 libgl1-mesa-dri libopengl0 xvfb
+      - run: mkdir -p output/frames && xvfb-run -a blender -b -t 2 --python scripts/scene.py
+      - run: xvfb-run -a blender -b /tmp/goobtv.blend -t 2 -o "$PWD/output/frames/f_" -F PNG -s 1 -e 192 -a
       - run: |
           espeak -v en-us+m3 -s 160 -w output/a.wav 'BABY STOP!'
           espeak -v en-us+m7 -s 125 -p 20 -w output/b.wav 'I AM THE STOP!'
